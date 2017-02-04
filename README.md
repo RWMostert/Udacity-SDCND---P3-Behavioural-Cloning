@@ -110,7 +110,7 @@ We can see that the dataset consists of left, center and right images taken at s
 <br><br>
 Taking a look at the individual images:
 
-![png](output_9_0.png)
+![png](output_9.png)
 
 
 
