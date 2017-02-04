@@ -1,9 +1,34 @@
 
 # Udacity SDCND:  Behavioural Cloning
 
-Teaching to mimik human driving behaviour in a simulator using a Convolutional Neural Network.
+We'll start with the necessary imports:
 
-## The Process:
+
+```python
+import cv2
+import json
+import os
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+from numpy.random import uniform, randint
+from pathlib import Path
+from scipy import signal
+
+from keras.models import Sequential
+from keras.layers.core import Dense, Dropout, Lambda
+from keras.layers import ELU, Convolution2D, MaxPooling2D, Flatten
+from keras.optimizers import Adam
+
+tf.python.control_flow_ops = tf
+%matplotlib inline
+```
+
+    Using TensorFlow backend.
+
 
 Import the CSV file and keep only the data with a throttle of greater than .25 applied. This ensures greater consistency and a smaller propensity of the model to tend towards zero values.
 <br><br>
@@ -22,13 +47,125 @@ df_train = shuffled_df[:6500]
 df_valid = shuffled_df[6500:]
 ```
 
+### Data Exploration
+
+
+```python
+df.head()
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>center</th>
+      <th>left</th>
+      <th>right</th>
+      <th>steering</th>
+      <th>throttle</th>
+      <th>brake</th>
+      <th>speed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>50</th>
+      <td>IMG/center_2016_12_01_13_32_43_357.jpg</td>
+      <td>IMG/left_2016_12_01_13_32_43_357.jpg</td>
+      <td>IMG/right_2016_12_01_13_32_43_357.jpg</td>
+      <td>0.000000</td>
+      <td>0.735778</td>
+      <td>0.0</td>
+      <td>0.953669</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>IMG/center_2016_12_01_13_32_43_457.jpg</td>
+      <td>IMG/left_2016_12_01_13_32_43_457.jpg</td>
+      <td>IMG/right_2016_12_01_13_32_43_457.jpg</td>
+      <td>0.061760</td>
+      <td>0.985533</td>
+      <td>0.0</td>
+      <td>2.124567</td>
+    </tr>
+    <tr>
+      <th>52</th>
+      <td>IMG/center_2016_12_01_13_32_43_558.jpg</td>
+      <td>IMG/left_2016_12_01_13_32_43_558.jpg</td>
+      <td>IMG/right_2016_12_01_13_32_43_558.jpg</td>
+      <td>0.052191</td>
+      <td>0.985533</td>
+      <td>0.0</td>
+      <td>3.286475</td>
+    </tr>
+    <tr>
+      <th>53</th>
+      <td>IMG/center_2016_12_01_13_32_43_659.jpg</td>
+      <td>IMG/left_2016_12_01_13_32_43_659.jpg</td>
+      <td>IMG/right_2016_12_01_13_32_43_659.jpg</td>
+      <td>0.052191</td>
+      <td>0.985533</td>
+      <td>0.0</td>
+      <td>4.440864</td>
+    </tr>
+    <tr>
+      <th>54</th>
+      <td>IMG/center_2016_12_01_13_32_43_761.jpg</td>
+      <td>IMG/left_2016_12_01_13_32_43_761.jpg</td>
+      <td>IMG/right_2016_12_01_13_32_43_761.jpg</td>
+      <td>0.367953</td>
+      <td>0.985533</td>
+      <td>0.0</td>
+      <td>5.565724</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+We can see that the dataset consists of left, center and right images taken at successive time intervals.  For each image set, we also have a steering, throttle, brake and speed value.
+<br><br>
+Taking a look at the individual images:
+
+
+```python
+plt.imshow(plt.imread("./data/" + df.iloc[0]['center']))
+plt.axis('off')
+plt.show();
+plt.imshow(plt.imread("./data/" + df.iloc[0]['center']))
+plt.axis('off')
+plt.show();
+plt.imshow(plt.imread("./data/" + df.iloc[0]['right'].lstrip()))
+plt.axis('off')
+plt.show();
+```
+
+
+![png](output_9_0.png)
+
+
+
+![png](output_9_1.png)
+
+
+
+![png](output_9_2.png)
+
+
+As expected, images taken from the center, left and right of the hood of the car.  We will use all 3 images, after adjusting the steering angles, of the selected timesteps (throttle > .25) in order to make maximum use of the data we have (and to train for recovery without explicitly generating too much training data for it - which could be tedious).
+
 ### Data Augmentation
 As described in NVIDIA's paper on end-to-end-learning (https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/), we augment the training data provided by varying the brightness, randomly shifting the image and randomly flipping the image. <br>
 Credit: Dr Vivek Yadav, "Learning human driving behavior using NVIDIA’s neural network model and image augmentation." - https://chatbotslife.com/learning-human-driving-behavior-using-nvidias-neural-network-model-and-image-augmentation-80399360efee#.ypdb28rdr
 
 
 ```python
-def set_rdm_brightness(image):
+def rdm_brightness(image):
     hsv_img = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     hsv_img[:,:,2] = hsv_img[:,:,2]*uniform(low=0.25, high=1.25)
     return cv2.cvtColor(hsv_img,cv2.COLOR_HSV2RGB)
@@ -76,6 +213,50 @@ def crop_and_resize(image):
     return np.array(image)
 ```
 
+We visualise the effects of these augmentation techniques:
+
+
+```python
+image, steering = image_and_steering_from_file(df.iloc[180])
+plt.title("Original Image "+"  (steering angle: "+str(steering)+")")
+plt.imshow(image)
+plt.axis('off')
+plt.show();
+
+plt.title("After Brightness Variation")
+plt.imshow(rdm_brightness(image))
+plt.axis('off')
+plt.show();
+
+image_shift, steering_shift = rdm_shift_image(image, steering)
+plt.title("After Randomly Shifting the Image "+"  (steering angle: "+str(steering_shift)+")")
+plt.imshow(image_shift)
+plt.axis('off')
+plt.show();
+
+image_flip, steering_flip = rdm_flip_image(image, steering)
+plt.title("After Flipping the Image "+"  (steering angle: "+str(steering_flip)+")")
+plt.imshow(image_flip)
+plt.axis('off')
+plt.show();
+```
+
+
+![png](output_17_0.png)
+
+
+
+![png](output_17_1.png)
+
+
+
+![png](output_17_2.png)
+
+
+
+![png](output_17_3.png)
+
+
 ### Generators
 Next we set up a batch generator so that all the images need not be kept in memory at training time. One for training and one for validation.
 
@@ -89,7 +270,7 @@ def batch_generator_train(data, batch_size = 32):
         for i in range(batch_size):
             file = data.iloc[randint(len(data))]
             image, steering = rdm_flip_image(*rdm_shift_image(*image_and_steering_from_file(file)))
-            image = crop_and_resize(set_rdm_brightness(image))
+            image = crop_and_resize(rdm_brightness(image))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
             
             images[i] = image
@@ -127,7 +308,7 @@ plt.show();
 ```
 
 
-![png](output_15_0.png)
+![png](output_22_0.png)
 
 
 
