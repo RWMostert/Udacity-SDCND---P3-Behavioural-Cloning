@@ -1,38 +1,16 @@
 
 # Udacity SDCND:  Behavioural Cloning
 
-We'll start with the necessary imports:
+Learning to mimik human driving behaviour in a simulator using a Convolutional Neural Network.
 
+![demo](giphy.gif)
+(https://youtu.be/3a00A8EYMmI)
 
-```python
-import cv2
-import json
-import os
-import math
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import tensorflow as tf
-
-from numpy.random import uniform, randint
-from pathlib import Path
-from scipy import signal
-
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Lambda
-from keras.layers import ELU, Convolution2D, MaxPooling2D, Flatten
-from keras.optimizers import Adam
-
-tf.python.control_flow_ops = tf
-%matplotlib inline
-```
-
-    Using TensorFlow backend.
-
+## The Process:
 
 Import the CSV file and keep only the data with a throttle of greater than .25 applied. This ensures greater consistency and a smaller propensity of the model to tend towards zero values.
 <br><br>
-Next We shuffle the data and split it into a testing set and a training set.
+Next we shuffle the data and split it into a testing set and a training set.
 
 
 ```python
@@ -132,20 +110,6 @@ We can see that the dataset consists of left, center and right images taken at s
 <br><br>
 Taking a look at the individual images:
 
-
-```python
-plt.imshow(plt.imread("./data/" + df.iloc[0]['center']))
-plt.axis('off')
-plt.show();
-plt.imshow(plt.imread("./data/" + df.iloc[0]['center']))
-plt.axis('off')
-plt.show();
-plt.imshow(plt.imread("./data/" + df.iloc[0]['right'].lstrip()))
-plt.axis('off')
-plt.show();
-```
-
-
 ![png](output_9_0.png)
 
 
@@ -160,7 +124,7 @@ plt.show();
 As expected, images taken from the center, left and right of the hood of the car.  We will use all 3 images, after adjusting the steering angles, of the selected timesteps (throttle > .25) in order to make maximum use of the data we have (and to train for recovery without explicitly generating too much training data for it - which could be tedious).
 
 ### Data Augmentation
-As described in NVIDIA's paper on end-to-end-learning (https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/), we augment the training data provided by varying the brightness, randomly shifting the image and randomly flipping the image. <br>
+As described in NVIDIA's paper on end-to-end-learning (https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/), we augment the training data by varying the brightness, shifting the image and flipping the image at random. <br>
 Credit: Dr Vivek Yadav, "Learning human driving behavior using NVIDIA’s neural network model and image augmentation." - https://chatbotslife.com/learning-human-driving-behavior-using-nvidias-neural-network-model-and-image-augmentation-80399360efee#.ypdb28rdr
 
 
@@ -201,17 +165,6 @@ def image_and_steering_from_file(file, center_only = False):
     return cv2.cvtColor(image,cv2.COLOR_BGR2RGB), steering
 ```
 
-As mentioned in the Nvidia paper, we crop the image to exclude the car and the sky.
-I then resize the image to a square 66x66 image (at 66x200 - the size used in the Nvidia paper - my model size easily exceeded 200mb, which would rapidly deplete my data cap allowances when downloading the model from AWS).
-
-
-```python
-def crop_and_resize(image):
-    shape = image.shape
-    image = image[40:shape[0]-25,:]
-    image = cv2.resize(image,(66,66), interpolation=cv2.INTER_AREA) 
-    return np.array(image)
-```
 
 We visualise the effects of these augmentation techniques:
 
@@ -255,6 +208,19 @@ plt.show();
 
 
 ![png](output_17_3.png)
+
+
+
+We then crop the image to exclude the car and the sky, after which we resize the image to a square 66x66 image (for simplicity and a smaller model size).
+
+
+```python
+def crop_and_resize(image):
+    shape = image.shape
+    image = image[40:shape[0]-25,:]
+    image = cv2.resize(image,(66,66), interpolation=cv2.INTER_AREA) 
+    return np.array(image)
+```
 
 
 ### Generators
@@ -368,9 +334,5 @@ model.save('MyModel_YES_INTERPOLATION_NEW_30.h5')
 
 ### Simulator Track 1
 
-### Simulator Track 2
-
-
-```python
-
-```
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/3a00A8EYMmI/0.jpg)]
+(https://youtu.be/3a00A8EYMmI)
