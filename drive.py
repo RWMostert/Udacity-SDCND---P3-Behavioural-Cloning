@@ -52,8 +52,7 @@ def telemetry(sid, data):
     steering_angle = float(model.predict(transformed_image_array, batch_size=1))
     # The driving model currently just outputs a constant throttle. Feel free to edit this.
     throttle = 0.1*20/(float(speed)+0.0001)
-    print(steering_angle, throttle)
-    send_control(steering_angle, 0.1)
+    send_control(steering_angle, throttle)
 
 
 @sio.on('connect')
