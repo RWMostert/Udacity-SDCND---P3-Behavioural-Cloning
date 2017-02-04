@@ -26,7 +26,7 @@ app = Flask(__name__)
 model = None
 prev_image_array = None
 
-def preprocess(image):
+def crop_and_resize(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
     shape = image.shape
     image = cv2.resize(image,(200,100)) 
@@ -45,9 +45,9 @@ def telemetry(sid, data):
     # The current image from the center camera of the car
     imgString = data["image"]
     image = Image.open(BytesIO(base64.b64decode(imgString)))
-    image_pre = np.asarray(image)
-    image_array = preprocess(image_pre)
-    transformed_image_array = image_array[None, :, :, :]
+    image = np.asarray(image)
+    image = crop_and_resize(image)
+    transformed_image_array = image[None, :, :, :]
     # This model currently assumes that the features of the model are just the images. Feel free to change this.
     steering_angle = float(model.predict(transformed_image_array, batch_size=1))
     # The driving model currently just outputs a constant throttle. Feel free to edit this.
