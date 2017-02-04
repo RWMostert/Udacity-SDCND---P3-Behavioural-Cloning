@@ -265,15 +265,6 @@ It consists of a typical convolutional neural network, with 5 convolutional laye
 <br>
 Figure: Convnet Structure
 
-
-```python
-plt.figure(figsize=(10,10))
-plt.imshow(plt.imread("FullSizeRender.jpg"))
-plt.axis('off')
-plt.show();
-```
-
-
 ![png](output_22_0.png)
 
 
