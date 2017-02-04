@@ -1,7 +1,7 @@
 
 # Udacity SDCND:  Behavioural Cloning
 
-Learning to mimik human driving behaviour in a simulator using a Convolutional Neural Network.
+Learning to mimic human driving behaviour in a simulator using a Convolutional Neural Network.
 
 ![demo](giphy.gif)
 (https://youtu.be/3a00A8EYMmI)
